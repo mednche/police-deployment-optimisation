@@ -72,9 +72,7 @@ An example on how to run the ABM is provided in `dpd_case_study/ABM_running_exam
 Include GIF here
 
 
-    ```md
-    ![alt text](dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/20_steps.gif)
-    ```
+![alt text](https://github.com/mednche/police-deployment-optimisation/blob/main/dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/20_steps.gif)
 
 For best results, it is recommended to harness the power of multiprocessing if you have a machien with multiple cores. 
 
