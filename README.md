@@ -5,6 +5,9 @@
 
 This repository provides complementary code and data for the work undertaken during my PhD.
 
+
+
+
 ### Motivations: What problem does it solve? What your model does,
 
 The model was build in a generic manner so as to be applied to any police force. It is made of two components:
@@ -14,6 +17,9 @@ The model was build in a generic manner so as to be applied to any police force.
 - Why you used the technologies you used,
 
 - Some of the challenges you faced and features you hope to implement in the future.
+
+
+
 
 ## Structure
 
@@ -44,7 +50,6 @@ For the ABM:
 For the GA:
 - `deap`
 
-
 The `ABM` codebase is composed of the following files:
 - `AgentFramework.py`: the attributes and methods for the agent entities
 - `ModelFramework.py`: the model entity
@@ -54,16 +59,15 @@ The `ABM` codebase is composed of the following files:
 - `BeatFramework.py`: the attributes and methods for the patrol beats
 - `Env.py`: the initialisation of the model environment composed of the road network, the patrol beats and the incidents for the time period.
 
-To run the ABM, it is necessary to aquire the following files and place them in the `data` folder: 
 
-1. `G.gpickle` and `G_proj.gpickle`: using the jupyter notebook `dpd_case_study/getting_the_road_network`, download the road network for your chosen police force using osmnx and save the graph as `G.pickle` and its projected version as `G_proj.gpickle`. May need to provide a simple jupyter notebook for that.
-2. `patrol_beats.shp`: Acquire the patrol beat shapefile and save as `patrol_beats.shp`.
-3. Optional: for producing a GIF, the code requires a `precincts.shp` and a `stations.csv`, although these are optional.
 
 
 ## Usage
 
-For a simple example on how to run the ABM, see the Jupyter notebook called `dpd_case_study/ABM_running_example/ABM_running_example`.
+### Example of DPD case study
+
+#### Running the ABM for DPD
+An example on how to run the ABM is provided in `dpd_case_study/ABM_running_example/ABM_running_example`.
 
 Include GIF here
 
@@ -72,10 +76,22 @@ Include GIF here
     ![alt text](dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/20_steps.gif)
     ```
 
-For best results, it is recommended to harness the power of multiprocessing if you have a machien with multiple cores.
+For best results, it is recommended to harness the power of multiprocessing if you have a machien with multiple cores. 
 
+#### Running the ABM+GA for DPD
 
 Expected time of running the GA on multiprocessing 
+
+
+
+### Using a custom police force
+
+To run the ABM for a different police force, it is necessary to first aquire the following files and place them in the `data` folder: 
+
+1. `G.gpickle` and `G_proj.gpickle`: using the jupyter notebook `dpd_case_study/getting_the_road_network`, download the road network for your chosen police force using osmnx and save the graph as `G.pickle` and its projected version as `G_proj.gpickle`. May need to provide a simple jupyter notebook for that.
+2. `patrol_beats.shp`: Acquire the patrol beat shapefile and save as `patrol_beats.shp`.
+3. Optional: for producing a GIF, the code requires a `precincts.shp` and a `stations.csv`, although these are optional.
+
 
 ## Licence
 
