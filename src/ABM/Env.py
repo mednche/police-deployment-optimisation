@@ -39,13 +39,12 @@ class Environment():
  
     """
 
-    def __init__(self, path_to_root, cfs_incidents, ABM_START_DATETIME, ABM_END_DATETIME,  historical_cfs_scenario=None, historical_crimes_scenario = None, num_hot_streets = 5, travel_speed_percent=None, patrol_beats_df=None):
+    def __init__(self, path_to_root, cfs_incidents, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = None, num_hot_streets = 5, travel_speed_percent=None, patrol_beats_df=None):
         """
         Inputs:
         - path_to_root: path to repo root directory
         - ABM_START_DATETIME, ABM_END_DATETIME: datetimes representing the start and end of the simulated period
         - cfs_incidents: dataframe of priority 1 incidents that took place during the simulated period
-        - historical_cfs_scenario (optional): the historical incidents that took place on similar time periods in the past (used for routing on patrol and for initialising 'streets_to_patrol' and 'patrol_route')
         - historical_crimes_scenario (optional): the historical crimes that took place on similar time periods in the past (used for routing on patrol and for initialising 'streets_to_patrol' and 'patrol_route')
         - num_hot_streets: number of hot streets to patrol in a beat (as part of a patrol route).
 
@@ -53,9 +52,6 @@ class Environment():
         - initialising edge attribute 'density_hist_inc'
         - initialising patrol beat attribue 'streets_to_patrol' and 'patrol_route'
 
-        Note: 'historical_cfs_scenario' was not used in the GA, as I chose to optimise deployement based on historical crime instead of incidents.
-        But I used it as part as the ABM experiments when deciding where to deploy k agents to hottest beats based on historical incidents.
-        
         Note: part of the GRAPH INIT section of this code is specific to situations where incidents are provided in a dataset at the **node** level and not the **edge** level. 
         A conversion step is thus necessary (via calculateDensityIncEdges).
         """
@@ -86,15 +82,13 @@ class Environment():
         if not (self.historical_crimes_scenario is None) :
 
             #######  COMPLETE density_hist_inc COLUMN IN GDF_EDGES   ######
-            ## FOR DETROIT ONLY:
             # ALLOCATE density_hist_inc TO ALL EDGES AROUND EACH NODE WITH INCIDENTS (for routing)
-            self.graph.calculateDensityIncEdges(historical_crimes_scenario) ## THIS IS FOR DETROIT ONLY
+            self.graph.calculateDensityIncEdges(historical_crimes_scenario) ## THIS IS FOR DETROIT ONLY AS CRIMES ARE SPATIALLY PERTURBED
      
 
         # if user did not provide any historical crime dataset    
         else :
-            print('user did not provide any historical crime dataset')
-            #historical_crimes_scenario = []
+            print('User did not provide any historical crime dataset. Deterrence score will be 0.')
         
         ## Add column with num_inc_attributed_edge_desc
         self.graph.add_density_hist_inc_desc_attribute_edges()
@@ -119,7 +113,7 @@ class Environment():
         self.patrol_beats = []
         for _, beat in patrol_beats_df.iterrows() :
             self.patrol_beats.append(BeatFramework.Beat(self, beat['name'], beat['precinct'], beat['geometry'], 
-                                                            beat['centroid_node'], historical_cfs_scenario, historical_crimes_scenario, num_hot_streets))
+                                                            beat['centroid_node'], historical_crimes_scenario, num_hot_streets))
 
         # =============================================================        
 

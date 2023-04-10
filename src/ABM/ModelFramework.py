@@ -99,7 +99,7 @@ class Model():
         #print("{} new incidents".format(incidents_df.shape[0]))
 
         # Add these incidents to the dispatcher's queue of unresolved incidents
-        self.dispatcher.AddIncidentsToQueue(interval_incidents)
+        self.dispatcher.addIncidentsToQueue(interval_incidents)
 
         # (1) Dispatcher step: distributing the unattended incidents in the queue to avail agents in precinct
         #print('*********  DISPATCHER STEP *******')
@@ -353,7 +353,11 @@ class Model():
 
     def evaluate_model(self, fail_threshold = 15):
         """ This function calculates and displays a set of metrics to evaluate 
-        the performance of the simulated configuration"""
+        the performance of the simulated configuration. 
+        Returns: 
+            - df: a dataframe with real versus simulated dispatch time and travel time for each incident in the time period
+            - sum_deterrence: the total deterrence score across agents throughout the simulation
+        """
         
         # Note: incident has to be sorted to be evaluated
         print('Statuses of incidents', [inc.status for inc in self.incidents])

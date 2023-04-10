@@ -1,9 +1,8 @@
 #%%
-"""Takes 8 hours for 20 evals for 80 individuals on HPC"""
+
 from deap import base
 from deap import creator
 from deap import tools
-#from deap import algorithms
 import numpy as np
 import pandas as pd
 import osmnx as ox
@@ -11,165 +10,143 @@ import networkx as nx
 import geopandas as gpd
 import os
 from os import getpid
-
 import warnings
-
 import matplotlib.pyplot as plt
-
-import sys
-
-
 import io
 import datetime as dt
 import random
 from contextlib import redirect_stdout
 import time
-
+import multiprocessing
 from multiprocessing import Pool, cpu_count
 from functools import partial
-
 import pickle
 import random
 
-#import sys
-# This is where the model files are stored
-#sys.path.insert(0, "/Users/natachachenevoy/Documents/GitHub/ABM-Detroit-Police-Dispatch/Model")
-sys.path.append('../../Model/Framework/')
 
-
+import sys
+sys.stdout.flush()
+# This is where the ABM files are stored
+sys.path.append('../../ABM/')
 
 import ModelFramework
-
-import multiprocessing
 import Env
 
 sys.path.append('../')
 from Evaluate_GA1_strat import run_ABMs_on_one_shift as run_ABMs_on_one_shift_eval
 
-#ABM_START_DATETIME = dt.datetime(2019,1, 20, 16)
-#ABM_END_DATETIME = dt.datetime(2019,1, 20, 21)
-# ABM_NUM_STEPS = 60 # optional.Use for gif making but not for GA
+# CHANGE VALUES BELOW
+MAX_NUM_AGENTS = 60 # maximum num agents in the force
+NUM_PATROL_BEATS = 131 # number of patrol beats in the force
+RSS = 2 # number of randomly sampled time periods to present to the individuals at each generation for evaluation
 
-#MIN_STATION_CAPACITY = 2
-#MAX_STATION_CAPACITY = 7
+ABM_STEP_TIME = 1 # Changing this value not recommended (code is not optimised yet for other values)
 
-MAX_NUM_AGENTS = 60
-NUM_PATROL_BEATS = 131
-RSS = 2
 #%%
-
-
 def run_single_ABM(individual, ABM_env):
-
+    """ Function to run a single ABM for a single individual.
+    Input: 
+    - the individual
+    - the ABM environment (which was loaded once before running every single ABM for this individual)
+    Returns: 
+    - df: a dataframe of dispatch and travel time for each incident.
+    """
+    global ABM_STEP_TIME
+    
     agents_in_beats = individual # All but last element in tuple
-    #idle_strat = individual[-1] # last element in tuple
 
-    ABM_STEP_TIME = 1
-
-    # sum of all agents in stations
+    # Get the sum of all agents in the beat
     num_agents = sum(agents_in_beats)
 
-    # create configuration dict
+    # Create configuration dict
     pairs = zip(ABM_env.patrol_beats, agents_in_beats)
     # Create a dictionary from zip object
     configuration = dict(pairs)
 
 
-    ## Initialiaze model
-    #print('Initialising ABM for ind {} and shift {}-{} ...'.format(individual, ABM_env.start_datetime, ABM_env.end_datetime))
+    ## Initialize ABM
     trap = io.StringIO()
     with redirect_stdout(trap):
         warnings.filterwarnings('ignore')
         model = ModelFramework.Model(ABM_env, configuration, 'Ph')
         warnings.filterwarnings('default')
         
-
-    ## Run model 
+    ## Run ABM 
     try: 
         trap = io.StringIO()
         with redirect_stdout(trap):
             _, _ = model.run_model(ABM_STEP_TIME)
     except:
-        raise ValueError('@@@ cant run model for shift = {}, num_agents = {}, strat = {}'.format(ABM_env.start_datetime, agents_in_beats))
+        raise ValueError('❌ Error running the ABM for shift = {}, num_agents = {}, strat = {}'.format(ABM_env.start_datetime, agents_in_beats))
             
-             
-
     ## Evaluate model  
-    #(num_failed, avg_dispatch_time, avg_travel_time, avg_response_time) = model.evaluate_model()
-    #print('Evaluating ABM for ind {} and shift {}-{} ...'.format(individual, ABM_env.start_datetime, ABM_env.end_datetime))
     trap = io.StringIO()
     with redirect_stdout(trap):
         df_metrics, sum_deterrence = model.evaluate_model()
-    #series_metrics = pd.Series(list_metrics)
-    return [df_metrics, sum_deterrence]#series_metrics 
+    return [df_metrics, sum_deterrence]
 
 
 def getIncidentsForScenario(incidents, scenario_num):
-    with open('../training_set_scenario{}.pkl'.format(scenario_num), 'rb') as f:
-        training_set_scenario = pickle.load(f)
+    """ This function returns a subset of incidents (historical CFS incidents or crimes) provided that took place on all time periods of a scenario_num
+    i.e. low-demand time periods or high-demand time periods
+    Inputs:
+    - incidents: the dataframe containing all incidents or crimes (depending on which dataset is provided)
+    - scenario_num: 1 for low demand and 2 for high demand.
+    Returns:
+    - historical_incidents_scenario: a dataframe of CFS incidents (or crimes) that occured on time periods of the chosen scenario
+    """
+    with open('./../../../data/historical_set_scenario{}.pkl'.format(scenario_num), 'rb') as f:
+        historical_set_scenario = pickle.load(f)
 
     incidents['Patrol_beat'] = incidents['Patrol_beat'].apply(str)
-    #historical_crimes['Precinct'] = historical_crimes['Precinct'].apply(str)
     incidents.Date_Time = pd.to_datetime(incidents.Date_Time)
  
     historical_incidents_scenario = pd.DataFrame()
-    for shift in training_set_scenario:
+    for shift in historical_set_scenario:
         historical_incidents_scenario = historical_incidents_scenario.append(incidents[(incidents['Date_Time'] >= shift[0]) & 
                                     (incidents['Date_Time'] < shift[1])])
-
 
     return historical_incidents_scenario
 
 
 def run_ABMs_on_one_shift(shift, population, toolbox, historical_crimes_scenario): 
-    #population = tuple(population)
+    """ This function to be run at the end of the training on each individual in the last population
+    to evaluate its performance on the shift.
+    Note: unlike the single objective GA, we here make use of historical crimes (historical_crimes_scenario) for the multi-objective (deterrence on patrol).
+    """
+
     ABM_START_DATETIME = shift[0]
     ABM_END_DATETIME = shift[1]
 
     try:
-        #### CHANGE THIS HERE TO IMPROVE: RUN IN PARALLEL FOR THE 131 PATROL BEATS INSIDE ENV SAVES LOAD OF TIME!
         warnings.filterwarnings('ignore')
 
-        
-
-        """historical_crimes = pd.read_csv("../../data/Crimes_edited_preprocessed.csv")
-        historical_crimes['Patrol_beat'] = historical_crimes['Patrol_beat'].apply(str)
-        #historical_crimes['Precinct'] = historical_crimes['Precinct'].apply(str)
-        historical_crimes.Date_Time = pd.to_datetime(historical_crimes.Date_Time)
-        # get the incidents one year prior to start of time period (or anything desired: could be 2 years)
-        historical_crimes_year = historical_crimes[(historical_crimes['Date_Time'] >= ABM_START_DATETIME- dt.timedelta(days = 365)) & 
-                                        (historical_crimes['Date_Time'] < ABM_START_DATETIME)]"""
-
-        cfs_incidents = pd.read_csv("../../data/incidents.csv")
+        # Get the incidents for the time period (shift)
+        cfs_incidents = pd.read_csv("./../../../data/incidents.csv")
         cfs_incidents.Date_Time = pd.to_datetime(cfs_incidents.Date_Time)
         cfs_incidents.Date_Time = cfs_incidents.Date_Time.dt.tz_localize(None)
         cfs_incidents['Patrol_beat'] = cfs_incidents['Patrol_beat'].apply(str)
         cfs_incidents['Precinct'] = cfs_incidents['Precinct'].apply(str)
-        # get all incidents within the time interval of the shift
         cfs_incidents_shift= cfs_incidents[(cfs_incidents['Date_Time'] >= ABM_START_DATETIME) & 
                                         (cfs_incidents['Date_Time'] < ABM_END_DATETIME)]
-
-                                        
+      
         trap = io.StringIO()
         with redirect_stdout(trap):
-            ABM_env = Env.Environment('./../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_cfs_scenario=None, historical_crimes_scenario = historical_crimes_scenario)
+            # Initialise the Env with incidents for the shift
+            ABM_env = Env.Environment('./../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = historical_crimes_scenario)
         warnings.filterwarnings('default')
     except:
-        raise ValueError('@@@ Env import problem @@@ for shift = {}'.format(shift))
+        raise ValueError('❌ Env import problem for shift = {}'.format(shift))
            
     try:
+        # Run ABM for each individual in pop on that Env (shift)
         multi_results  = toolbox.map(partial(run_single_ABM, ABM_env = ABM_env), population)
-        #list_of_dfs, sum_deterrence= results
-  
     except:
-        raise ValueError('@@@ failed to run ABM on an individual of pop')
+        raise ValueError('❌ Failed to run ABM on an individual of pop')
     
     
     dict_for_shift = dict(zip(population,multi_results))
-    #print('dict_for_shift:{}'.format(len(dict_for_shift)))
-    #print(dict_for_shift.keys())
-   
-    #print("Process {} finised".format(getpid()))
+
     return dict_for_shift
 
 
@@ -185,7 +162,7 @@ def evalMultiObj(population, scenario_num, historical_crimes_scenario):
     with open('./../training_set_scenario{}.pkl'.format(scenario_num), 'rb') as f:
         list_shifts = pickle.load(f)
     
-    # WE ONLY EVALUATE ON 1 SHIFTS AT EACH GENERATION
+    # WE ONLY EVALUATE ON 1 SHIFT AT EACH GENERATION
     indices = np.random.choice(len(list_shifts), RSS, replace=False)
     list_shifts = np.array(list_shifts)[indices]
     
@@ -445,8 +422,6 @@ def create_toolbox():
     scenario_num = sys.argv[1]
 
     # GET HISTORICAL CRIMES FOR SCENARIO
-    #historical_cfs = pd.read_csv("../../data/incidents.csv")
-    #historical_cfs_scenario = getIncidentsForScenario(historical_cfs, 1)
     historical_crimes = pd.read_csv("../../data/Crimes_edited_preprocessed.csv")
     historical_crimes_scenario = getIncidentsForScenario(historical_crimes, scenario_num)
 

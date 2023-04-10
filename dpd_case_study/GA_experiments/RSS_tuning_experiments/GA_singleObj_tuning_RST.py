@@ -108,7 +108,7 @@ def run_ABMs_on_one_shift_eval(shift, individual):
         
         trap = io.StringIO()
         with redirect_stdout(trap):
-            ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_cfs_scenario=None, historical_crimes_scenario = None)
+            ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = None)
         #ABM_env = Env.Environment('./../../', ABM_START_DATETIME, ABM_END_DATETIME)
         warnings.filterwarnings('default')
     except:
@@ -241,7 +241,7 @@ def run_ABMs_on_one_shift(shift, population, toolbox):
                                         
         #trap = io.StringIO()
         #with redirect_stdout(trap):
-        ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_cfs_scenario=None, historical_crimes_scenario = None)
+        ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = None)
  
         warnings.filterwarnings('default')
     except:

@@ -59,8 +59,8 @@ class Dispatcher():
 
 
 
-    def AddIncidentsToQueue(self, incident_interval):
-        """ Add the list of new incidents to the queue of unattended incidents
+    def addIncidentsToQueue(self, incident_interval):
+        """ Adds the list of new incidents to the queue of unattended incidents
         Input: list of incident objects that for the model time step"""
         self.incident_queue += incident_interval
 
@@ -76,7 +76,7 @@ class Dispatcher():
 
 
     def update_avail_agents(self):
-        """ Function adds newly available model agents to the list of available agents
+        """ Adds newly available model agents to the list of available agents
         """
         #print('>>> updating available agents')
         for agent in self.model.agents_schedule.agents:
@@ -106,16 +106,16 @@ class Dispatcher():
         """ This function replaces the agent currently dispatched to the incident 
         by another agent. This function is called when a new agent is found 
         closer to a non-sorted incident and replaces the agent already on the case.
-        Dismissing an agent consists in:
+        
         
         * Inputs:
-            - object 'incident'
+            - incident entity
         """
         
         # get previous agent targeting incident
         previous_agent = incident.agent
 
-        # mark previous agent as available
+        # Mark previous agent as available
         # but won't be available for this step because already listed available agents
         previous_agent.updateStatus('patrol')
 
@@ -131,35 +131,18 @@ class Dispatcher():
     def find_nearest_avail_agent(self, incident, list_agents_in_precinct):
         """Find nearest available agent for a given incident
         NB: This function is called at every model step for all unattended incidents in the queue
-        * Input: 
+        * Inputs: 
             - an object 'incident'
             - the precinct in which the incident took place
             - list of available agents (ojects)
         * Returns: 
-            - chosen agent (if a new available agent is found to be closer)
-            - None (if there is already a closer agent targetting this incident)
+            - chosen agent if a new available agent is found to be closer, 
+            or None if there is already a closer agent targetting this incident
         """
         
         #by default the first agent in the list is chosen for the task
         # NB: the first agent is different every step because we use a scheduler
-        """chosen_agent = list_agents_in_precinct[0]  
-        shortest_route = self.model.graph.findShortestRoute(chosen_agent.pos, incident.node, weight='travel_time_mins')
-        # get the estimated drive time for that route
-        drive_time_list = ox.utils_graph.get_route_edge_attributes(self.model.graph.G, shortest_route, 
-                                                    attribute = 'travel_time_mins', minimize_key='travel_time_mins')
-        min_drive_time = sum(drive_time_list)
-        #nx.shortest_path_length(self.graph.G, chosen_agent.pos, incident.loc, weight='travel_time_mins')
-        #print('min_route:{}'.format(min_route_len))
-        # iterate through the other agents
-        for agent in self.schedule_avail_agents.agent_buffer(shuffled=True):
-            
-            
-            if drive_time < min_drive_time:
-                #print('agent {} closer than default candidate agent {}'. format(agent.unique_id, chosen_agent.unique_id))
-                min_drive_time = drive_time
-                #print('Drive time: {}'.format(min_drive_time))
-                chosen_agent = agent"""
-
+        
         # Find out the shortest route to incident from all avail agents in precinct
         list_shortest_routes = [self.model.graph.findBestRoute(agent.pos, incident.node, weight='travel_time_mins') for agent in list_agents_in_precinct]
         # Calculated estimated drive time for the route
@@ -173,10 +156,7 @@ class Dispatcher():
         # Get the agent corresponding to the min drive time
         chosen_agent = list_agents_in_precinct[index]
         route_chosen_agent = list_shortest_routes[index]
-        #print("list_drive_times: ", list_drive_times)
-        #print("min_drive_time: ", min_drive_time)
-        #print("chosen_agent: ", chosen_agent.unique_id)
-
+ 
 
         #print('Candidate agent: {} for incident {}'.format(chosen_agent.unique_id, incident.id))
         
