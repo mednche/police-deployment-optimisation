@@ -19,18 +19,35 @@ The model was build in a generic manner so as to be applied to any police force.
 - Some of the challenges you faced and features you hope to implement in the future.
 
 
-
+- Demand scenarios, explain
 
 ## Structure
 
 The `src` folder contains the model codebase, split into an `ABM` folder -- containing the code for running the ABM on its own -- and a `GA` folder with the code to run the ABM-based (single and multi-objective) optimisation.
 
+The `data` folder is where all the necessary data files need to be placed to run the analysis. Ensure the files are named correctly when you replace them with your own. The required files are:
+
+1. Spatial entities:
+- `patrol_beats` folder: contains the shapefiles for the patrol beats (i.e. the smaller spatial unit within which agents are deployed to patrol)
+- `precincts` folder: contains the shapefiles for the districts/precincts (i.e. the larger spatial unit within which agents are dispatched to calls)
+- `stations.csv` (only needed to be displayed in the ABM animated GIF)
+- `G.gpickle`: the networkX graph representing the road network of the police force (see below for details on how it is generated)
+- `G_proj.gpickle`: the networkX graph representing the road network of the police force, projected to UTM (see below for details on how it is generated)
+
+2. Historical crimes and CFS incidents:
+- `incidents.csv`: a dataset of historical CFS incidents (see below for details of required columns)
+- `crimes.csv`: a dataset of historical crimes (see below for details of required columns) 
+
+3. Historical, training and test sets for ABM experiments and GA training (see below for how these are generated):
+- `historical_set_scenario1.pkl`
+- `historical_set_scenario2.pkl`
+- `training_set_scenario1.pkl`
+- `training_set_scenario2.pkl`
+- `testing_set_scenario1.pkl`
+- `testing_set_scenario2.pkl`
 
 The folder `dpd_case_study` contains all the files pertaining to the case study on Detroit Police Department (DPD), Michigan. It contains a `data` folder with the datasets used in the case study, as well as a series of folders containing the code and results for various analyses conducted on the model:
-- a sensitivity analysis on the ABM
-- a validation of the ABM
 - experiments using the ABM on DPD
-- a tuning experiment for the RSS parameter of the single-objective GA
 - results of the single and multi-objective GAs applied to DPD
 
 
@@ -67,14 +84,26 @@ The `ABM` codebase is composed of the following files:
 ### Example of DPD case study
 
 #### Running the ABM for DPD
+
+#### Generating historical, training and test sets
+
+In `generating_data_sets.ipynb` we create historical, training and test sets for both demand scenarios. 
+
+A set is a collection of 100 specifically selected time periods from sepearate years to mimic the manner in which police agencies make decisions based on past demand.
+- historical set: 100 time periods from 2017
+- training set: 100 time periods from 2018
+- test set: 100 time periods from 2019
+
+For more details on what these sets are used for, see `generating_data_sets.ipynb`.
+Ensure that the 6 generated sets are placed in the `data` folder at the source of the repository.
+
+#### Running the ABM for DPD
 An example on how to run the ABM is provided in `dpd_case_study/ABM_running_example/ABM_running_example`.
-
-Include GIF here
-
 
 ![alt text](https://github.com/mednche/police-deployment-optimisation/blob/main/dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/20_steps.gif)
 
-For best results, it is recommended to harness the power of multiprocessing if you have a machien with multiple cores. 
+For faster results, it is recommended to harness the power of multiprocessing if your machine has multiple cores (example not provided). 
+
 
 #### Running the ABM+GA for DPD
 
