@@ -24,7 +24,7 @@ class Beat():
     """  
         A patrol beat.
     """
-    def __init__(self, env, name, precinct,  geometry, centroid_node, historical_crimes_scenario, num_hot_streets):
+    def __init__(self, env, name, precinct,  geometry, centroid_node, historical_cfs_scenario, historical_crimes_scenario, num_hot_streets):
 
         """
             Inputs:
@@ -33,6 +33,7 @@ class Beat():
             - precinct (string): name of the precinct the patrol beat belongs to (e.g '1')
             - geometry (polygon): list of linestring objects spatially representing the shape of the beat
             - centroid_node (integer): the osmid of the node closest to the spatial centroid of the beat
+            - historical_cfs_scenario: a dataset of historical cfs across the force for the simulated demand scenario
             - historical_crimes_scenario: a dataset of historical crimes across the force for the simulated demand scenario
             - num_hot_streets (integer): the number of streets to patrol in the beat as part of the patrol route
 
@@ -42,6 +43,7 @@ class Beat():
             - geometry (polygon): list of linestring objects spatially representing the shape of the beat
             - centroid_node (integer): the osmid of the node closest to the spatial centroid of the beat
             - graph: the graph entity (extracted from env) for easy access
+            - historical_cfs: the historical incidents that took place in the beat for the simulated demand scenario
             - historical_crimes: the historical crimes that took place in the beat for the simulated demand scenario
             - streets_to_patrol (list of edge osmids): the list of edge osmids in the beat that need to be patrolled
             - patrol_route (list of node osmids): ordered list of node osmids in the beat to be visited by a patrolling agent
@@ -55,16 +57,19 @@ class Beat():
         self.graph = env.graph
 
         # =================================================================
-        # NOTE: I don't think these are actually used
+        # NOTE: I used this for getting targetted configurations (towards hsitorical crimes/incidents)
         # =================================================================
         
+        self.historical_crimes = None
         # filter the historical crimes for THAT particular beat
         if isinstance(historical_crimes_scenario, pd.DataFrame):
             self.historical_crimes = self.getIncidentsBeat(historical_crimes_scenario)
-        else :
-            self.historical_crimes: None
+        
+        self.historical_cfs = None
+        # filter the historical incidents for THAT particular beat
+        if isinstance(historical_cfs_scenario, pd.DataFrame):
+            self.historical_cfs = self.getIncidentsBeat(historical_cfs_scenario)
 
-       
         # =================================================================
 
         # get the streets to patrol based on incidents
@@ -209,7 +214,7 @@ class Beat():
 
         else :
             # If no historical crime occured in the patrol beat: get random streets
-            print('NO STREETS WITH HISTORICAL CRIME DETECTED IN BEAT - {} streets chosen arbitrarily'.format(num_streets))
+            print('NO STREETS WITH HISTORICAL CRIME DETECTED IN BEAT - {} streets chosen arbitrarily'.format(number_streets))
             hot_streets_utm_df = self.getRandomStreets(number_streets)
 
         return hot_streets_utm_df

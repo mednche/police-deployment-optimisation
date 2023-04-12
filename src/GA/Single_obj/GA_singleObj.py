@@ -67,7 +67,7 @@ def run_ABMs_on_one_shift_eval(shift, individual, patrol_beats_df = None):
         trap = io.StringIO()
         with redirect_stdout(trap):
             # Initialise the Env with incidents for the shift
-            ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = None, patrol_beats_df=patrol_beats_df)
+            ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_cfs_scenario = None, historical_crimes_scenario = None, patrol_beats_df=patrol_beats_df)
         warnings.filterwarnings('default')
     
     except:
@@ -171,7 +171,7 @@ def run_ABMs_on_one_shift(shift, population, toolbox):
 
 
         # Initialise the Env with incidents for that shift. DO this once for all the individuals saves time.                     
-        ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = None)
+        ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_cfs_scenario = None, historical_crimes_scenario = None)
  
         warnings.filterwarnings('default')
     except:
@@ -210,7 +210,6 @@ def evalSingleObj(population, scenario_num):
     indices = np.random.choice(len(list_shifts), RSS, replace=False)
     list_shifts = np.array(list_shifts)[indices]
    
-
     # Convert to tuple for dict key later
     population = [tuple(ind) for ind in population]
 
@@ -348,7 +347,6 @@ def modifiedEaMuCommaLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen,
         # Parent selection BEFORE BREEDING
         # selecting mu parents from pop of size mu (with replacement).
         # NB: selectParents uses DEAP selTournament agorithm which relies on selRandom which has replacement
-        
         parent_pool = toolbox.selectParents(population, mu)
 
         # Turn individuals in parent_pool into a list instead of a DEAP object to be printed

@@ -39,7 +39,7 @@ class Environment():
  
     """
 
-    def __init__(self, path_to_root, cfs_incidents, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = None, num_hot_streets = 5, travel_speed_percent=None, patrol_beats_df=None):
+    def __init__(self, path_to_root, cfs_incidents, ABM_START_DATETIME, ABM_END_DATETIME, historical_cfs_scenario = None, historical_crimes_scenario = None, num_hot_streets = 5, travel_speed_percent=None, patrol_beats_df=None):
         """
         Inputs:
         - path_to_root: path to repo root directory
@@ -113,7 +113,7 @@ class Environment():
         self.patrol_beats = []
         for _, beat in patrol_beats_df.iterrows() :
             self.patrol_beats.append(BeatFramework.Beat(self, beat['name'], beat['precinct'], beat['geometry'], 
-                                                            beat['centroid_node'], historical_crimes_scenario, num_hot_streets))
+                                                            beat['centroid_node'], historical_cfs_scenario, historical_crimes_scenario, num_hot_streets))
 
         # =============================================================        
 

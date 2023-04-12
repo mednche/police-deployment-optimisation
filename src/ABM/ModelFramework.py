@@ -373,8 +373,9 @@ class Model():
         sorted_inc = [inc for inc in self.incidents if inc.status >=3]
         print("Number of sorted incidents: {}/{}".format(len(sorted_inc), len(all_inc)))
         
-
+        # Get a list of dispatch times for all incidents
         dispatch_times = [inc.dispatch_time for inc in all_inc]
+        # Get a list of travel times for all incidents where an agent has reached the scene (otherwise None)
         travel_times = [inc.travel_time if inc.status >= 2 else None for inc in all_inc ]
 
         avg_travel_time = np.mean([inc.travel_time for inc in all_inc if inc.status >= 2  ])

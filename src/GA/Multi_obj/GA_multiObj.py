@@ -93,7 +93,7 @@ def getIncidentsForScenario(incidents, scenario_num):
     - incidents: the dataframe containing all incidents or crimes (depending on which dataset is provided)
     - scenario_num: 1 for low demand and 2 for high demand.
     Returns:
-    - historical_incidents_scenario: a dataframe of CFS incidents (or crimes) that occured on time periods of the chosen scenario
+    - historical_incidents_scenario: a dataframe of CFS incidents (or crimes) that occured on time periods of the chosen scenario (Detroit: year 2017)
     """
     with open('./../../../data/historical_set_scenario{}.pkl'.format(scenario_num), 'rb') as f:
         historical_set_scenario = pickle.load(f)
@@ -133,7 +133,7 @@ def run_ABMs_on_one_shift(shift, population, toolbox, historical_crimes_scenario
         trap = io.StringIO()
         with redirect_stdout(trap):
             # Initialise the Env with incidents for the shift
-            ABM_env = Env.Environment('./../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_crimes_scenario = historical_crimes_scenario)
+            ABM_env = Env.Environment('./../../../', cfs_incidents_shift, ABM_START_DATETIME, ABM_END_DATETIME, historical_cfs_scenario = None, historical_crimes_scenario = historical_crimes_scenario)
         warnings.filterwarnings('default')
     except:
         raise ValueError('❌ Env import problem for shift = {}'.format(shift))
@@ -153,36 +153,41 @@ def run_ABMs_on_one_shift(shift, population, toolbox, historical_crimes_scenario
 
 
 def evalMultiObj(population, scenario_num, historical_crimes_scenario):
-    global RSS
-    """ Function calls run_ABM_on_shift() for each shift in the training_set.
-    It returns the average response time over the 100 shifts
+    global RSS, MAX_NUM_AGENTS
+    """ This function evaluates the fitness of all individuals on a set of chosen time periods for this generation.
+    It calls run_ABMs_on_one_shift() for each shift in the training_set for scenario_num (100 shifts per scenario).
+    Inputs: 
+    - population: list of individuals (DEAP object)
+    - scenario_num: 1 is low_demand, 2 is high demand
+    - historical_crimes_scenario: a dataset of historical crimes used in the initialisation of the ABM environment (Env). This is specific to the multi-objective GA
+    Returns:
+    - list_fitnesses: a list of tupples representing the fitness values, one for each individual (e.g. [(3.5, 30, 5, 536), (2.5, 55, 0.2, 651) ...])
+    The fitness of an indivual represents the tuple (avg_response_time, total_num_agents, percent_failed, total_sum_deterrence) 
+    calculated over the 100 shifts of the training set, combining all the df_metrics for those shifts.
     """
-    #os.chdir('/nobackup/mednche/GA-Detroit/GA1_experiment/')
     
-    with open('./../training_set_scenario{}.pkl'.format(scenario_num), 'rb') as f:
+    with open('./../../../data/training_set_scenario{}.pkl'.format(scenario_num), 'rb') as f:
         list_shifts = pickle.load(f)
     
-    # WE ONLY EVALUATE ON 1 SHIFT AT EACH GENERATION
+    # WE ONLY EVALUATE ON RSS NUMBER OF RANDOMLY CHOSEN SHIFT(S) AT EACH GENERATION (e.g. RSS=2)
     indices = np.random.choice(len(list_shifts), RSS, replace=False)
     list_shifts = np.array(list_shifts)[indices]
     
-
     # Convert to tuple for dict key later
     population = [tuple(ind) for ind in population]
     print('Num_ind_to_evaluate', len(population))
+
     pop_unique_ind = set(population)
     print('Num unique ind,', len(pop_unique_ind))
-    #print(pop_unique_ind)
 
     list_dict_for_shift = [run_ABMs_on_one_shift(shift,pop_unique_ind,toolbox, historical_crimes_scenario) for shift in list_shifts]
     print('-------->>>> Finished evaluating {} ABMs for each ind in population of {}<<<<<-------- '.format(len(list_shifts), len(pop_unique_ind)))
     list_fitnesses = []
+
     # For each ind in population
     # The dictionnary is essential to not have to evaluate duplicate individuals
-  
-        
     for ind in population:
-        # list of sum deterrence (one value per shift for that individual) [1,20, 30.7]
+        # list of sum deterrence (one value per shift for that individual) [1, 20, 30.7]
         list_sum_deterrence = [dict_for_shift[ind][1] for dict_for_shift in list_dict_for_shift]
         # list of dfs (one value per shift for that individual) [df, df, df]
         list_dfs = [dict_for_shift[ind][0] for dict_for_shift in list_dict_for_shift]
@@ -212,25 +217,29 @@ def evalMultiObj(population, scenario_num, historical_crimes_scenario):
             total_sum_deterrence = sum(list_sum_deterrence)
         
         # Save value in a list of size: len(pop)
-        #list_fitnesses.append((avg_response_time, total_num_agents))
         list_fitnesses.append((avg_response_time, total_num_agents, percent_failed, total_sum_deterrence))
-        
-    #print('list_fitnesses' ,list_fitnesses)
-        
+
 
     return list_fitnesses
 
 
 # Variation algortihm
 def modifiedVarAnd(population, toolbox, lambda_, cxpb, mutpb):
-    """Modified varOr to look like varAnd, i.e. probas pc and pm are independant
-    (but keep the Lambda)
-    Population will be the breeding pool (a sample of population mu)
-    but can be the entire population mu if needed. 
-    Regarless of the size of population in input, it will create lambda offsprings
+    """This function applies a variation algorithm to individuals in the population.
+    Inputs:
+    - population: the parent/breeding pool (typically a subset of population mu)
+    - toolbox: DEAP toolbox pre-initialised
+    - lambda_: number of offspring to generate in the process
+    - cxpb: crossover probability
+    - mutpb: mutation probability
+    Returns: 
+    - offsrping: a list of individuals created through the variation process
+
+    Note: SAME AS SINGLE-OBJECTIVE GA
     """
-    #print('lambda_: ',lambda_)
+    
     offspring = []
+
     # create the necessary number of offspring
     for i in range(lambda_):
 
@@ -241,7 +250,6 @@ def modifiedVarAnd(population, toolbox, lambda_, cxpb, mutpb):
             #print('Crossover between {} and {}'.format(ind1, ind2))
             ind, _ = toolbox.mate(ind1, ind2)
             del ind.fitness.values
-            #print(' Resulting offsping number {}: {}'.format(i, ind1))
         # No crossover
         else: 
             ind = random.choice(population)
@@ -252,7 +260,6 @@ def modifiedVarAnd(population, toolbox, lambda_, cxpb, mutpb):
             ind = toolbox.clone(ind)
             print('Mutating ind')
             ind, = toolbox.mutate(ind)
-            #print('Resulting offspring number {}: {}'.format(i, ind))
             del ind.fitness.values
 
         offspring.append(ind)
@@ -260,13 +267,25 @@ def modifiedVarAnd(population, toolbox, lambda_, cxpb, mutpb):
     return offspring
 
 
-
-
 # Evolution algorithm
 def modifiedEaMuCommaLambda(population, toolbox, mu, lambda_, cxpb, indpb, ngen, last_gen, logbook,
                     stats, scenario_num, halloffame=None, verbose=__debug__):
-
-    """I decided to:
+    """ This function applies the main evolutionary algorithm on the population.
+        Inputs:
+        - population: listof individuals (DEAP object)
+        - toolbox: DEAP toolbox pre-initialised
+        - mu: size of the population (number of individuals)
+        - lambda_: number of offspring to generate in the process
+        - cxpb: crossover probability
+        - mutpb: mutation probability
+        - ngen: number of generations to run the algorithm
+        - last_gen: last population saved from previous runs of this GA (to continue learning from there)
+        - logbook: DEAP logbook object to save key statistics of the learning along the way
+        Returns:
+        - population: the population at the end of the learning
+        - logbook: the logbook at the end of the learning
+    
+    Notes: I decided to:
     - Use a breeding pool selection (parent selection) on top of the survivor selection.
     This is to accelerate the convergence of population towards optimum. Otherwise too slow
     - Not let the population age and stay in the next gen. All replaced by new offspring 
@@ -274,11 +293,14 @@ def modifiedEaMuCommaLambda(population, toolbox, mu, lambda_, cxpb, indpb, ngen,
 
     assert lambda_ >= mu, "lambda must be greater or equal to mu."
 
-    breeding_pool_size = 12#int(mu/2) ## CHANGE HERE TO TUNE GA, APPLY MORE PRESSURE
-    # Chose 12 so that tournamentDCD receive a population of size 12 + 40 =52 which is a multiple of 4 
-
-    # Evaluate the individuals with an invalid fitness (the ones that have been modified recently)
-    # At gen 0 it basically means evaluating all ind in pop
+    # Chose 12 so that tournamentDCD receives a population of size 12 + 40 =52 which is a multiple of 4 
+    breeding_pool_size = 12 # <- CHANGE HERE TO TUNE GA, APPLY MORE PRESSURE (typically int(mu/2) )
+    
+    #=====================================================
+    # Evaluate the individuals with an 'invalid' fitness 
+    # (i.e. calculate a fitness for individuals that don't yet have one because they have undergone variation/are new)
+    # Note: at gen 0 this basically means evaluating all ind in pop
+    #=====================================================
     invalid_ind = [ind for ind in population if not ind.fitness.valid]
 
     # Only if there are invalid ind (new ones)
@@ -288,19 +310,21 @@ def modifiedEaMuCommaLambda(population, toolbox, mu, lambda_, cxpb, indpb, ngen,
         for ind, fit in zip(invalid_ind, fitnesses):
             print(sum(ind), fit)
             ind.fitness.values = fit
+    #=====================================================
 
-    
 
-    ### IF PARENT BREEDING POOL SELECTION
+    #=====================================================
+    #       Assign crowding distance to individuals
+    #=====================================================
     # This is just to assign the crowding distance to the individuals
     # no actual selection is done
     population = toolbox.selectSurvivors(population, mu) # NSGA-II
+    #=====================================================
 
     # Log HOF
     if halloffame is not None:
         halloffame.update(population)
 
-   
     # Write first record in logbook
     population_without_na = [ind for ind in population if not np.isnan(ind.fitness.values[0])]
     print('population: ', len(population), 'population_without_na: ', len(population_without_na))
@@ -310,22 +334,15 @@ def modifiedEaMuCommaLambda(population, toolbox, mu, lambda_, cxpb, indpb, ngen,
         print(logbook.stream)
 
 
-    # # Initialise logbook
-    # logbook = tools.Logbook()
-    # logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
-
-    # record = stats.compile(population) if stats is not None else {}
-    # logbook.record(gen=0, nevals=len(invalid_ind), **record)
-    # if verbose:
-    #     print(logbook.stream)
-    
     # Save the population (list of individuals) in a pickle file so we can continue from there.
     with open('population_gen_{}_scenario{}'.format(last_gen, scenario_num), 'wb') as f:
         pickle.dump(population, f)
 
-    #################################
-    # Begin the generational process
-    #################################
+    #====================================================
+    #====================================================
+    ###         Begin the generational process        ###
+    #====================================================
+    #====================================================
     for gen in range(last_gen+1, last_gen + ngen+1):
         sys.stdout.flush()
         print('------------------------')
@@ -340,61 +357,59 @@ def modifiedEaMuCommaLambda(population, toolbox, mu, lambda_, cxpb, indpb, ngen,
             sys.stdout = original_stdout # Reset the standard output to its original value
 
         
-        #################################
-        ###   Parent selection   ####
-        #################################
-        # selecting k parents from pop of size mu => chose k = mu/2.
+        #=====================================
+        #            Parent selection        #
+        #=====================================
+        # Select breeding_pool_size parents from pop of size mu
         # This is so that there are fewer individuals in the parent pools
         # In single obj, we use tournament which uses replacement so this attempts to apply equivalent pressure
         print('Selecting best parents for breeding...')
-        parent_pool =  toolbox.selectParents(population,breeding_pool_size) # 
+        parent_pool =  toolbox.selectParents(population,breeding_pool_size)
         print('...', len(parent_pool))
 
-        #################################
-        ###   Vary the population   ####
-        #################################
+        #=====================================
+        #          Vary the population     #
+        #=====================================
         offspring = modifiedVarAnd(parent_pool, toolbox, lambda_, cxpb, indpb)
         print('Offspring created:', len(offspring))
-        #print('Offspring after variations:')
-        # #print(offspring)
 
-        #################################
-        ###   Evaluate offspring   ####
-        # Evaluate the individuals with an invalid fitness (those that we have never seen before)
-        #################################
-        
+        #===================================================
+        #           Evaluate offspring   
+        # Evaluate the individuals with an invalid fitness 
+        # (i.e. those that we have never seen before)
+        #===================================================
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        #print('new ind to evaluate', len(invalid_ind))
         try:
             fitnesses = toolbox.evaluate(invalid_ind)
         except:
-            raise ValueError("@@@ Can't evaluate fitnesses of invalid_ind : {}".format(invalid_ind))
+            raise ValueError("❌ Error evaluating fitnesses of invalid_ind : {}".format(invalid_ind))
 
         for ind, fit in zip(invalid_ind, fitnesses):
             print(sum(ind), fit)
             ind.fitness.values = fit
+        #=====================================
 
-
-          
+        
         ######   Update HOF with the generated individuals #####
         if halloffame is not None:
             halloffame.update(offspring)
 
         print('Current HOF size:', len([hofer for hofer in halloffame]))
         
-        """for ind in halloffame:
-            print(sum(ind), ind.fitness)"""
+       
 
-
-        #################################
-        ###     Survivor selection   ####
-        # Select mu individuals for next gen pop from all lambda offspring (or parents + offspring pops)
-        #################################
+        #============================================================================================
+        #          Survivor selection        #
+        # Select mu individuals for next gen pop 
+        # from parents + offspring pops (mu + lambda) selection 
+        # (alternatives selection: elitism, round-robin tournament, (mu + lambda) selection, (mu, lambda))
+        #============================================================================================
         
-        print('Selecting best ind for next gen:')
+        print('Selecting best inds for next gen:')
         population[:] = toolbox.selectSurvivors(population + offspring, mu)
-        # (mu + lambda) selection (alternatives: elitism, round-robin tournament, (mu + lambda) selection, (mu, lambda) selection)
 
+        #============================================================================================
+        
         # Update the statistics with the new population
         population_without_na = [ind for ind in population if not np.isnan(ind.fitness.values[0])]
         print('population: ', len(population), 'population_without_na: ', len(population_without_na))
@@ -419,18 +434,24 @@ def modifiedEaMuCommaLambda(population, toolbox, mu, lambda_, cxpb, indpb, ngen,
 
 
 def create_toolbox():
+    """ This function initialise the DEAP toolbox.
+    """
+    global MAX_NUM_AGENTS, NUM_PATROL_BEATS
+    
     scenario_num = sys.argv[1]
 
     # GET HISTORICAL CRIMES FOR SCENARIO
-    historical_crimes = pd.read_csv("../../data/Crimes_edited_preprocessed.csv")
+    historical_crimes = pd.read_csv("../../../data/crimes.csv")
     historical_crimes_scenario = getIncidentsForScenario(historical_crimes, scenario_num)
 
 
     def gen_random_parameters():
-        """Create an array of NUM_PATROL_BEATS with MAX_NUM_AGENTS random values as 1 and the rest as 0. 
-        This prevent the starting population from having too many agents above the constraints 
-        (these would be penalised and discarded, ultimately reducing the diversity of the population quite early on!"""
+        """ This function initialise an individual by randomly creating an array of NUM_PATROL_BEATS 
+        with MAX_NUM_AGENTS random values as 1 and the rest as 0. 
+        Note: same as single-objective GA
+        """
         global MAX_NUM_AGENTS, NUM_PATROL_BEATS
+
         list_num_agents_scas = np.zeros((NUM_PATROL_BEATS,), dtype=int)
 
         # get a random number of beats to staff
@@ -444,66 +465,52 @@ def create_toolbox():
 
         return tuple(list_num_agents_scas)
 
-
-    creator.create("Fitness", base.Fitness, weights=(-1.0,-1.0,-1.0, 1.0)) # Change here for mutli obj. Negative yo minimise objective
+    # Define fitness with weights and direction of objectives (negative weight to minimise)
+    creator.create("Fitness", base.Fitness, weights=(-1.0,-1.0,-1.0, 1.0))
     creator.create("Individual", list, fitness=creator.Fitness)
 
     ## TOOLBOX
     toolbox = base.Toolbox()
+    # Attribute generator
     toolbox.register("attribute_generator", gen_random_parameters)
 
     # Structure initializers
-    # NB: initRepeat if same creation function for n = 100 genes (parameters)
-    # But here it is initIterate for just once
     toolbox.register("individual", tools.initIterate, creator.Individual, 
                         toolbox.attribute_generator) 
 
     toolbox.register("population", tools.initRepeat, list, toolbox.individual) 
-    # NB we don’t fix the number of individuals that the population should contain
-
-    # the defined evaluation function
+    
+    # Tool initializers
     toolbox.register("evaluate", evalMultiObj, scenario_num=scenario_num, historical_crimes_scenario=historical_crimes_scenario) # CHANGE HERE FOR MULTI
-    # don't need constraint handling here as it is being penalised as an objective
-    #toolbox.decorate("evaluate", tools.DeltaPenalty(feasible, [1000, , ,])) # can also add optional distance function away from constraint value to punish even more
-    #avg_response_time, total_num_agents, percent_failed, total_sum_deterrence
     toolbox.register("mate", tools.cxTwoPoint)
     toolbox.register("mutate", tools.mutFlipBit, indpb=0.1) # independent probability of each attribute to be mutated 
-    toolbox.register("selectSurvivors", tools.selNSGA2) # for multi-objectives - ref_points=ref_points?
-    toolbox.register("selectParents", tools.selTournamentDCD) # forsingle obj
+    toolbox.register("selectSurvivors", tools.selNSGA2)
+    toolbox.register("selectParents", tools.selTournamentDCD)
 
 
     return toolbox
 
 
-
-#%%
-# if __name__ == "__main__":
 def main():
 
     # get the scenario number for which to run the GA.
     scenario_num = sys.argv[1]
-    print('scenario_num', scenario_num)
+    print('Scenario_num', scenario_num)
     
+    # CHANGE KEY GA VALUES HERE
     NGEN = 60
     mu = 40 #must be a multiple of 4 for selTournamentDCD
 
     # Process Pool of 4 workers
     from multiprocessing import Pool
 
-    pool = Pool(processes=min(cpu_count(), mu)) #max of 40 on HPC <---------------
-    toolbox.register("map", pool.map) #<---------------""" 
+    pool = Pool(processes=min(cpu_count(), mu)) # max of 40 on University of Leeds HPC 
+    toolbox.register("map", pool.map)
     
-    """# For genealogy tree
-    history = tools.History()
-    # Decorate the variation operators
-    toolbox.decorate("mate", history.decorator)
-    toolbox.decorate("mutate", history.decorator)
-    # Create the population and populate the history"""
 
-
-    ######################################################
-    ###### Import or randomly create population ##########
-    ######################################################
+    #===================================================
+    #        Import or randomly create population       #
+    #===================================================
     
     last_gen = 0
     import os.path
@@ -547,26 +554,21 @@ def main():
         logbook.chapters["num_vehicles"].header = "min", "avg", "max"
 
 
-    ######################################################
-
-
-    #history.update(pop)
+    #======================================================
     
 
     l = len(pop[0])
     CXPB = 0.9 # [0.6-0.8] or [0.7-0.9]
     print('Pc = ', CXPB)
-    #MUTPB = 1/mu
     
     MUTPB = 1/mu # [1/l, 1/mu]
-    #print('INDPB = ', INDPB)
     print('Pm = ', MUTPB)
-    lambda_ = mu#int(mu + mu/2)# so that fewer individuals to evaluate with ABMs
+    lambda_ = mu
     print('lambda_: ',lambda_)
 
 
+    # Initialise stats for logbook
     #In order of ind fitness: avg_response_time, total_num_agents, percent_failed, total_sum_deterrence
-
     stats_respTime = tools.Statistics(key=lambda ind: ind.fitness.values[0])
     stats_deterrence= tools.Statistics(key=lambda ind: ind.fitness.values[3])
     stats_size = tools.Statistics(key=lambda ind: sum(ind))
@@ -578,23 +580,14 @@ def main():
     mstats.register("median", np.median)
     mstats.register("std", np.std)
 
-
-    # # Define the statistics to use in logbook
-    # stats = tools.Statistics(lambda ind: ind.fitness.values)
-    # stats.register("min", np.min, axis=0)
-    # stats.register("max", np.max, axis=0)
-    # stats.register("avg", np.mean, axis=0)
-    # stats.register("std", np.std, axis=0)
-
-
-    ##################################################################
-    ### SEARCH PARAMETER SPACE FOR best strats on various shifts each gen
-    ##################################################################
-
-    
+    #==============================================
+    #                TRAIN THE GA
+    #==============================================
     start_time = time.time()
     
     hof, population, logbook2 = modifiedEaMuCommaLambda(pop, toolbox, mu, lambda_, CXPB, MUTPB, NGEN, last_gen, logbook, mstats, scenario_num, hof, verbose = True)
+    
+    # Note: the population is saved after each generation (see above)
     
     end_time = time.time()
 
@@ -602,28 +595,13 @@ def main():
         pickle.dump(logbook2, f)
 
     print("Running time step 1: {} mins".format((end_time-start_time)/60))
+    #================================================
 
     
         
-        
-    # # Plot genealogy tree
-    # plt.figure(figsize=(5,5))
-    # graph = nx.DiGraph(history.genealogy_tree)
-    # graph = graph.reverse()     # Make the graph top-down
-    # colors = [toolbox.evaluate(history.genealogy_history[i])[0] for i in graph]
-    # nx.draw(graph, node_color=colors)
-    # plt.title('Genealogy tree')
-    # plt.show()
-    # plt.savefig("Genealogy_tree.png")
 # %%
 
 toolbox = create_toolbox()
 
 if __name__ == "__main__":
     main()
-
-# %%
-
-# %%
-
-# %%
