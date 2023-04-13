@@ -80,7 +80,7 @@ The `ABM` codebase is composed of the following files:
 
 ## Usage (example of Detroit)
 
-#### Aquiring data
+### Aquiring data
 
 To run the ABM, it is necessary to first aquire the following files and place them in the `data` folder: 
 
@@ -109,14 +109,14 @@ Columns:
   - Patrol_beat
 
 
-#### Preprocessing
+### Preprocessing
 
 Next, run the jupyter notebook in `dpd_case_study/data_preprocessing.ipynb` to preprocess the data prior to running any model. There are 3 preprocessing steps in this notebook:
 1. Download the road network for your chosen police force, using `osmnx`, preprocess the graph to add some columns and save it as `G.pickle` and its projected version as `G_proj.gpickle`.
 2. Preprocess the `patrol_beats.shp` to add the `centroid_node` column
 3. Preprocess the `incidents.csv` and `crimes.csv` to add a `Node` column to the datasets. This is not done in the notebook itself but need to be run in command line using multiprocessingdue to the size of the dataset.
 
-#### Generating historical, training and test sets
+### Generating historical, training and test sets
 
 In `dpd_case_study/generating_data_sets.ipynb` we create historical, training and test sets for both demand scenarios. 
 
@@ -128,14 +128,14 @@ A set is a collection of 100 specifically selected time periods from sepearate y
 For more details on what these sets are used for, see `dpd_case_study/generating_data_sets.ipynb`.
 Ensure that the 6 generated sets are placed in the `data` folder at the source of the repository.
 
-#### Running the ABM
+### Running the ABM
 
 An example on how to run the ABM is provided in `dpd_case_study/ABM_running_example/ABM_running_example`.
 
 ![alt text](https://github.com/mednche/police-deployment-optimisation/blob/main/dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/20_steps.gif)
 
 
-#### Running the single-objective GA
+### Running the GAs
 
 The following notebooks provide instructions on how to run the single-objective GA and offer some figures to interpret the learning and visualise the prescribed solutions:
 - Single-objective GA: `dpd_case_study/GA/Single_obj/single_objective_GA_example.ipynb`
