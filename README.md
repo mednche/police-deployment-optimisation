@@ -28,7 +28,7 @@ In what follows, two types of shifts are studied separately so that the tool can
 
 ## Structure of the repo
 
-The `src` folder contains the model codebase, split into an `ABM` folder -- containing the code for running the ABM on its own -- and a `GA` folder with the code to run the ABM-based (single and multi-objective) optimisation.
+The `src` folder contains the model codebase, split into an `ABM` folder - containing the code for running the ABM on its own - and a `GA` folder with the code to run the ABM-based (single and multi-objective) optimisation.
 
 The `data` folder is where all the necessary data files need to be placed to run the analysis. Ensure the files are named correctly when you replace them with your own. The required files are:
 
