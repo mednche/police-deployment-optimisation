@@ -78,26 +78,58 @@ The `ABM` codebase is composed of the following files:
 
 
 
+## Usage (example of Detroit)
 
-## Usage
+#### Aquiring data
 
-### Example of DPD case study
+To run the ABM, it is necessary to first aquire the following files and place them in the `data` folder: 
 
-#### Running the ABM for DPD
+1. `patrol_beats.shp`: Aquire the patrol beat shapefile and save as `patrol_beats.shp`.
+Columns:
+  - name
+  - precinct
+  - geometry 
+3. `precincts.shp`: Aquire the precinct shapefile and save as `precincts.shp`.
+Columns:
+  - name
+  - geometry
+5. `incidents.csv`: Aquire a dataset of historical CFS incidents.
+Columns:
+  - Date_Time
+  - lat
+  - lon
+  - Precinct
+  - Patrol_beat
+  - Time On Scene
+5. `crimes.csv`: Aquire a dataset of historical crimes
+Columns:
+  - Date_Time
+  - lat
+  - lon
+  - Patrol_beat
+
+
+#### Preprocessing
+
+Next, run the jupyter notebook in `dpd_case_study/data_preprocessing.ipynb` to preprocess the data prior to running any model. There are 3 preprocessing steps in this notebook:
+1. Download the road network for your chosen police force, using `osmnx`, preprocess the graph to add some columns and save it as `G.pickle` and its projected version as `G_proj.gpickle`.
+2. Preprocess the `patrol_beats.shp` to add the `centroid_node` column
+3. Preprocess the `incidents.csv` and `crimes.csv` to add a `Node` column to the datasets. This is not done in the notebook itself but need to be run in command line using multiprocessingdue to the size of the dataset.
 
 #### Generating historical, training and test sets
 
-In `generating_data_sets.ipynb` we create historical, training and test sets for both demand scenarios. 
+In `dpd_case_study/generating_data_sets.ipynb` we create historical, training and test sets for both demand scenarios. 
 
 A set is a collection of 100 specifically selected time periods from sepearate years to mimic the manner in which police agencies make decisions based on past demand.
 - historical set: 100 time periods from 2017
 - training set: 100 time periods from 2018
 - test set: 100 time periods from 2019
 
-For more details on what these sets are used for, see `generating_data_sets.ipynb`.
+For more details on what these sets are used for, see `dpd_case_study/generating_data_sets.ipynb`.
 Ensure that the 6 generated sets are placed in the `data` folder at the source of the repository.
 
-#### Running the ABM for DPD
+#### Running the ABM
+
 An example on how to run the ABM is provided in `dpd_case_study/ABM_running_example/ABM_running_example`.
 
 ![alt text](https://github.com/mednche/police-deployment-optimisation/blob/main/dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/20_steps.gif)
@@ -108,16 +140,6 @@ For faster results, it is recommended to harness the power of multiprocessing if
 #### Running the ABM+GA for DPD
 
 Expected time of running the GA on multiprocessing 
-
-
-
-### Using a custom police force
-
-To run the ABM for a different police force, it is necessary to first aquire the following files and place them in the `data` folder: 
-
-1. `G.gpickle` and `G_proj.gpickle`: using the jupyter notebook `dpd_case_study/getting_the_road_network`, download the road network for your chosen police force using osmnx and save the graph as `G.pickle` and its projected version as `G_proj.gpickle`. May need to provide a simple jupyter notebook for that.
-2. `patrol_beats.shp`: Acquire the patrol beat shapefile and save as `patrol_beats.shp`.
-3. Optional: for producing a GIF, the code requires a `precincts.shp` and a `stations.csv`, although these are optional.
 
 
 ## Licence
