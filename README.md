@@ -5,10 +5,7 @@
 
 This repository provides complementary code and data for the work undertaken during my PhD.
 
-
-
-
-### Motivations: 
+### Motivations
 
 Police agencies face the challenge of deploying patrols effectively to both (1) respond to calls and (2) deter crime through patrolling, all the while keeping operational costs low. These are conflicting objectives of efficiency and effectiveness related to the proactive and the reactive demand that they face.
 
