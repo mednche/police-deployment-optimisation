@@ -132,7 +132,7 @@ Ensure that the 6 generated sets are placed in the `data` folder at the source o
 
 An example on how to run the ABM is provided in `dpd_case_study/ABM_running_example/ABM_running_example`.
 
-![alt text](https://github.com/mednche/police-deployment-optimisation/blob/main/dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/100_steps.gif)
+![alt text](https://github.com/mednche/police-deployment-optimisation/blob/main/dpd_case_study/ABM_running_example/ABM_animation_gif/20_agents/20_steps.gif)
 
 
 #### Running the ABM+GA for DPD
