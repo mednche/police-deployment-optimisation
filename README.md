@@ -8,20 +8,25 @@ This repository provides complementary code and data for the work undertaken dur
 
 
 
-### Motivations: What problem does it solve? What your model does,
+### Motivations: 
 
-The model was build in a generic manner so as to be applied to any police force. It is made of two components:
+Police agencies face the challenge of deploying patrols effectively to both (1) respond to calls and (2) deter crime through patrolling, all the while keeping operational costs low. These are conflicting objectives of efficiency and effectiveness related to the proactive and the reactive demand that they face.
+
+This repo contains a decision-support tool which can identify deployments that offer tradeoffs between these objectives. The tool was built so as to be applied to any police force. It is made of two components:
 - an Agent-Based Model that simulates the dispatching of police patrols throughout a given shift
 - a Genetic Algorithm that searches for the optimal number and spatial positioning of police patrols.
 
+<!---
 - Why you used the technologies you used,
-
 - Some of the challenges you faced and features you hope to implement in the future.
+-->
+
+In what follows, two types of shifts are studied separately so that the tool can prescribe a solution that is tailored to the demand faced:
+-	low-demand: weekdays (8am-4pm)
+- high-demand: weekend days (midnight-8am)
 
 
-- Demand scenarios, explain
-
-## Structure
+## Structure of the repo
 
 The `src` folder contains the model codebase, split into an `ABM` folder -- containing the code for running the ABM on its own -- and a `GA` folder with the code to run the ABM-based (single and multi-objective) optimisation.
 
@@ -30,7 +35,6 @@ The `data` folder is where all the necessary data files need to be placed to run
 1. Spatial entities:
 - `patrol_beats` folder: contains the shapefiles for the patrol beats (i.e. the smaller spatial unit within which agents are deployed to patrol)
 - `precincts` folder: contains the shapefiles for the districts/precincts (i.e. the larger spatial unit within which agents are dispatched to calls)
-- `stations.csv` (only needed to be displayed in the ABM animated GIF)
 - `G.gpickle`: the networkX graph representing the road network of the police force (see below for details on how it is generated)
 - `G_proj.gpickle`: the networkX graph representing the road network of the police force, projected to UTM (see below for details on how it is generated)
 
@@ -46,11 +50,7 @@ The `data` folder is where all the necessary data files need to be placed to run
 - `testing_set_scenario1.pkl`
 - `testing_set_scenario2.pkl`
 
-The folder `dpd_case_study` contains all the files pertaining to the case study on Detroit Police Department (DPD), Michigan. It contains a `data` folder with the datasets used in the case study, as well as a series of folders containing the code and results for various analyses conducted on the model:
-- experiments using the ABM on DPD
-- results of the single and multi-objective GAs applied to DPD
-
-
+The folder `dpd_case_study` contains all the files pertaining to the case study on Detroit Police Department (DPD), Michigan folders and jupyter pyton scripts and notebooks to run the ABM and the GAs.
 
 
 ## Installation
@@ -84,12 +84,12 @@ The `ABM` codebase is composed of the following files:
 
 To run the ABM, it is necessary to first aquire the following files and place them in the `data` folder: 
 
-1. `patrol_beats.shp`: Aquire the patrol beat shapefile and save as `patrol_beats.shp`.
+1. `patrol_beats.shp`: Aquire the patrol beat shapefile.
 Columns:
   - name
   - precinct
   - geometry 
-3. `precincts.shp`: Aquire the precinct shapefile and save as `precincts.shp`.
+3. `precincts.shp`: Aquire the precinct shapefile.
 Columns:
   - name
   - geometry
@@ -138,6 +138,7 @@ For faster results, it is recommended to harness the power of multiprocessing if
 
 
 #### Running the ABM+GA for DPD
+
 
 Expected time of running the GA on multiprocessing 
 
