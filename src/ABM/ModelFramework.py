@@ -286,7 +286,7 @@ class Model():
                     colours.append(nc)
                     
             # plot incidents as image 
-            image_inc = OffsetImage(plt.imread('{}Images/incident.png'.format(path_to_root)), zoom = 0.09)
+            image_inc = OffsetImage(plt.imread('{}images/incident.png'.format(path_to_root)), zoom = 0.09)
             ax.scatter(X_inc, Y_inc, s = 0.0001, zorder=1)
             for x, y in zip(X_inc, Y_inc):
                 ab = AnnotationBbox(image_inc, (x, y), frameon=False)
@@ -294,7 +294,7 @@ class Model():
                 ax.add_artist(ab)
             
             # plot agents as image of a car
-            image_car = OffsetImage(plt.imread('{}Images/car.png'.format(path_to_root)), zoom = 0.15)
+            image_car = OffsetImage(plt.imread('{}images/car.png'.format(path_to_root)), zoom = 0.15)
             ax.scatter(X_agents, Y_agents, s = 0.0001, zorder=2)
             for x, y in zip(X_agents, Y_agents):
                 ab = AnnotationBbox(image_car, (x, y), frameon=False)
