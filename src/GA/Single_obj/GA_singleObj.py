@@ -504,7 +504,7 @@ def main():
     print('Pc = ', CXPB)
     
     MUTPB = 1/mu # [1/l, 1/mu] => [1/131 1/40]
-    print('Pm = ', MUTPB)
+    #print('MUTPB = ', MUTPB)
 
     lambda_ = mu
     print('lambda_: ',lambda_)
