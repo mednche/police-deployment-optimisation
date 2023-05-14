@@ -142,5 +142,5 @@ For faster results, it is recommended to harness the power of multiprocessing if
 
 ## Licence
 
-Apache Licence
+MIT
 
